@@ -42,18 +42,27 @@ function removeHoverOverlay() {
   hoverOverlay = null;
 }
 
-// Mouse move handler for highlighting
+/**
+ * Mouse move handler for hover highlighting during extraction mode.
+ * Updates the blue border overlay to follow the cursor over elements.
+ * @param {MouseEvent} event - Mouse move event
+ */
 function handleMouseMove(event) {
   if (!isExtracting || !hoverOverlay) return;
   const target = event.target;
   if (!target || sidebarEl?.contains(target) || target === hoverOverlay) return;
 
-  const rect = target.getBoundingClientRect();
-  hoverOverlay.style.left = `${rect.left + window.scrollX}px`;
-  hoverOverlay.style.top = `${rect.top + window.scrollY}px`;
-  hoverOverlay.style.width = `${rect.width}px`;
-  hoverOverlay.style.height = `${rect.height}px`;
-  hoverOverlay.style.display = "block";
+  try {
+    const rect = target.getBoundingClientRect();
+    hoverOverlay.style.left = `${rect.left + window.scrollX}px`;
+    hoverOverlay.style.top = `${rect.top + window.scrollY}px`;
+    hoverOverlay.style.width = `${rect.width}px`;
+    hoverOverlay.style.height = `${rect.height}px`;
+    hoverOverlay.style.display = "block";
+  } catch (error) {
+    // Silently fail on hover errors to avoid disrupting user experience
+    console.warn("CRE: Hover highlight error:", error);
+  }
 }
 
 // Click handler to perform extraction
@@ -65,36 +74,59 @@ function handleClick(event) {
   event.preventDefault();
   event.stopPropagation();
 
-  stopExtraction();
-  const extracted = extractElement(target);
-  lastExtractedComponent = extracted;
-  showSidebar(extracted);
+  try {
+    stopExtraction();
+    const extracted = extractElement(target);
+    lastExtractedComponent = extracted;
+    showSidebar(extracted);
+  } catch (error) {
+    console.error("CRE: Extraction failed:", error);
+    stopExtraction();
+    alert("Failed to extract component. Please try again.");
+  }
 }
 
-// Extract outerHTML and a basic computed CSS block for the element
+/**
+ * Extract outerHTML and computed CSS for a DOM element.
+ * Cleans up IDs/classes to avoid conflicts and extracts relevant styles.
+ * @param {HTMLElement} el - The element to extract
+ * @returns {{html: string, css: string}} Object with cleaned HTML and extracted CSS
+ */
 function extractElement(el) {
+  if (!el || !el.cloneNode) {
+    throw new Error("Invalid element provided for extraction");
+  }
+
+  // Deep clone the element to avoid modifying the original
   const cloned = el.cloneNode(true);
 
-  // Clean up IDs and classes to reduce conflicts
+  // Clean up IDs and classes to reduce conflicts with target pages
   cleanElementAttributes(cloned);
 
   const html = cloned.outerHTML;
-  const css = buildBasicCssForElement(el);
+  const css = buildComputedCssForElement(el);
 
   return { html, css };
 }
 
-// Strip data-* attributes and normalize IDs/classes
+/**
+ * Recursively clean element attributes to avoid conflicts.
+ * Removes IDs, normalizes classes to "cre-component", and strips data-* attributes.
+ * @param {Node} node - DOM node to clean (recursively processes children)
+ */
 function cleanElementAttributes(node) {
   if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+  // Remove IDs to prevent conflicts
   node.removeAttribute("id");
 
+  // Normalize all classes to a generic "cre-component" class
   const classList = Array.from(node.classList || []);
   if (classList.length > 0) {
     node.className = "cre-component";
   }
 
-  // Remove data-* attributes
+  // Remove data-* attributes (often contain page-specific state)
   const attrs = Array.from(node.attributes || []);
   attrs.forEach((attr) => {
     if (attr.name.startsWith("data-")) {
@@ -102,41 +134,111 @@ function cleanElementAttributes(node) {
     }
   });
 
+  // Recursively clean child elements
   Array.from(node.children).forEach(cleanElementAttributes);
 }
 
-// Build a very simple CSS rule using computed styles for the root element only
-function buildBasicCssForElement(el) {
-  const computed = window.getComputedStyle(el);
-  const importantProps = [
-    "display",
-    "position",
-    "margin",
-    "padding",
-    "backgroundColor",
-    "color",
-    "fontSize",
-    "fontWeight",
-    "border",
-    "borderRadius",
-  ];
+/**
+ * Extract computed CSS styles for an element and its direct children.
+ * Captures layout, typography, colors, and spacing properties.
+ * @param {HTMLElement} el - The root element to extract styles from
+ * @returns {string} CSS string with styles for the component
+ */
+function buildComputedCssForElement(el) {
+  if (!el || !window.getComputedStyle) {
+    return "";
+  }
 
-  const lines = [];
-  importantProps.forEach((prop) => {
-    const cssName = prop.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
-    const value = computed[prop];
-    if (
-      value &&
-      value !== "0px" &&
-      value !== "none" &&
-      value !== "rgba(0, 0, 0, 0)"
-    ) {
-      lines.push(`  ${cssName}: ${value};`);
-    }
-  });
+  try {
+    const computed = window.getComputedStyle(el);
+    const importantProps = [
+      // Layout
+      "display",
+      "position",
+      "top",
+      "right",
+      "bottom",
+      "left",
+      "width",
+      "height",
+      "minWidth",
+      "minHeight",
+      "maxWidth",
+      "maxHeight",
+      "flexDirection",
+      "flexWrap",
+      "justifyContent",
+      "alignItems",
+      "gap",
+      // Spacing
+      "margin",
+      "marginTop",
+      "marginRight",
+      "marginBottom",
+      "marginLeft",
+      "padding",
+      "paddingTop",
+      "paddingRight",
+      "paddingBottom",
+      "paddingLeft",
+      // Visual
+      "backgroundColor",
+      "color",
+      "border",
+      "borderTop",
+      "borderRight",
+      "borderBottom",
+      "borderLeft",
+      "borderRadius",
+      "borderTopLeftRadius",
+      "borderTopRightRadius",
+      "borderBottomLeftRadius",
+      "borderBottomRightRadius",
+      "boxShadow",
+      "opacity",
+      // Typography
+      "fontFamily",
+      "fontSize",
+      "fontWeight",
+      "fontStyle",
+      "lineHeight",
+      "textAlign",
+      "textDecoration",
+      "letterSpacing",
+      // Other
+      "overflow",
+      "overflowX",
+      "overflowY",
+      "cursor",
+      "zIndex",
+    ];
 
-  if (!lines.length) return "";
-  return `.cre-component {\n${lines.join("\n")}\n}`;
+    const lines = [];
+    importantProps.forEach((prop) => {
+      const cssName = prop.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
+      const value = computed[prop];
+
+      // Skip empty, zero, or transparent values
+      if (
+        value &&
+        value !== "0px" &&
+        value !== "0" &&
+        value !== "none" &&
+        value !== "rgba(0, 0, 0, 0)" &&
+        value !== "transparent" &&
+        value !== "normal" &&
+        value !== "auto"
+      ) {
+        lines.push(`  ${cssName}: ${value};`);
+      }
+    });
+
+    if (!lines.length) return "";
+    return `.cre-component {\n${lines.join("\n")}\n}`;
+  } catch (error) {
+    console.error("CRE: Failed to extract CSS:", error);
+    return "";
+  }
 }
 
 // Inject the sidebar for AI remix and manual editing
@@ -310,22 +412,38 @@ function removeSidebar() {
   resetPageShiftForSidebar();
 }
 
-// Start extraction mode: enable listeners and overlay
+/**
+ * Start extraction mode: enable hover highlighting and click extraction.
+ * Adds event listeners for mousemove (highlighting) and click (extraction).
+ */
 function startExtraction() {
   if (isExtracting) return;
-  isExtracting = true;
-  ensureHoverOverlay();
-  document.addEventListener("mousemove", handleMouseMove, true);
-  document.addEventListener("click", handleClick, true);
+  try {
+    isExtracting = true;
+    ensureHoverOverlay();
+    document.addEventListener("mousemove", handleMouseMove, true);
+    document.addEventListener("click", handleClick, true);
+  } catch (error) {
+    console.error("CRE: Failed to start extraction:", error);
+    isExtracting = false;
+  }
 }
 
-// Stop extraction mode and hide overlay
+/**
+ * Stop extraction mode: remove listeners and hide overlay.
+ * Cleans up event listeners and removes the hover highlight overlay.
+ */
 function stopExtraction() {
   if (!isExtracting) return;
-  isExtracting = false;
-  removeHoverOverlay();
-  document.removeEventListener("mousemove", handleMouseMove, true);
-  document.removeEventListener("click", handleClick, true);
+  try {
+    isExtracting = false;
+    removeHoverOverlay();
+    document.removeEventListener("mousemove", handleMouseMove, true);
+    document.removeEventListener("click", handleClick, true);
+  } catch (error) {
+    console.error("CRE: Error stopping extraction:", error);
+    isExtracting = false;
+  }
 }
 
 // Listen for messages from the popup to start/stop extraction
