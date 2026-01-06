@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Component Remix Engine (CRE)</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div id="cre-popup-root">
+      <header class="cre-header">
+        <div class="cre-title-group">
+          <span class="cre-title">Component Remix Engine</span>
+          <span class="cre-subtitle"
+            >Extract, remix, and export UI components</span
+          >
+        </div>
+        <button id="cre-toggle-extraction" class="cre-btn cre-btn-primary">
+          Start extraction
+        </button>
+      </header>
+
+      <section class="cre-settings">
+        <div class="cre-settings-row">
+          <label class="cre-label" for="cre-api-key">
+            OpenAI API key
+            <span class="cre-label-help"
+              >(dummy key prefilled for testing)</span
+            >
+          </label>
+          <input
+            id="cre-api-key"
+            type="password"
+            placeholder="sk-..."
+            class="cre-input"
+          />
+          <button id="cre-save-settings" class="cre-btn cre-btn-secondary">
+            Save
+          </button>
+        </div>
+
+        <div class="cre-settings-row">
+          <label class="cre-label" for="cre-framework-select"
+            >Default framework</label
+          >
+          <select id="cre-framework-select" class="cre-input">
+            <option value="react">React (JSX)</option>
+            <option value="vue">Vue SFC</option>
+            <option value="html">HTML + CSS</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="cre-library-controls">
+        <input
+          id="cre-search"
+          type="text"
+          class="cre-input"
+          placeholder="Search library by name or tags..."
+        />
+      </section>
+
+      <section class="cre-library">
+        <div class="cre-library-header">
+          <span class="cre-section-title">Component library</span>
+          <button id="cre-save-latest" class="cre-btn cre-btn-secondary">
+            Save latest component
+          </button>
+        </div>
+        <div id="cre-library-empty" class="cre-library-empty">
+          No components saved yet. Extract an element, remix it, then save it
+          here.
+        </div>
+        <div id="cre-library-grid" class="cre-library-grid"></div>
+      </section>
+    </div>
+
+    <!-- Prettier (optional) for formatting generated code when available -->
+    <script src="https://unpkg.com/prettier@3.0.0/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@3.0.0/parser-babel.js"></script>
+    <script src="https://unpkg.com/prettier@3.0.0/parser-html.js"></script>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
