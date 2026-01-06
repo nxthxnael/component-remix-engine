@@ -6,6 +6,19 @@ let hoverOverlay = null;
 let sidebarEl = null;
 let lastExtractedComponent = null; // { html, css }
 
+// Shift page content to make room for the sidebar
+function applyPageShiftForSidebar() {
+  document.documentElement.style.transition = "margin-right 0.2s ease-out";
+  document.body.style.transition = "margin-right 0.2s ease-out";
+  document.body.style.marginRight = "360px";
+}
+
+// Reset page layout when sidebar is closed
+function resetPageShiftForSidebar() {
+  document.documentElement.style.marginRight = "";
+  document.body.style.marginRight = "";
+}
+
 // Create a highlight overlay div if it does not exist
 function ensureHoverOverlay() {
   if (hoverOverlay) return;
@@ -172,6 +185,7 @@ function showSidebar(component) {
   `;
 
   document.documentElement.appendChild(sidebarEl);
+  applyPageShiftForSidebar();
 
   // Fill original preview
   const preview = sidebarEl.querySelector("#cre-original-preview");
@@ -293,6 +307,7 @@ function removeSidebar() {
     sidebarEl.parentNode.removeChild(sidebarEl);
   }
   sidebarEl = null;
+  resetPageShiftForSidebar();
 }
 
 // Start extraction mode: enable listeners and overlay
