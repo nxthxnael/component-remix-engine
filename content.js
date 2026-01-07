@@ -315,11 +315,16 @@ function showSidebar(component) {
     const prompt = promptInput.value.trim();
     if (!prompt) {
       statusEl.textContent = "Enter a prompt to remix the component.";
+      statusEl.style.color = "#ef4444"; // Red for error
       return;
     }
+
+    // Reset status styling
+    statusEl.style.color = "#9ca3af";
     statusEl.textContent = "Contacting AI…";
     remixBtn.disabled = true;
 
+    // Send AI remix request to background service worker
     chrome.runtime.sendMessage(
       {
         type: "AI_REMIX",
@@ -331,23 +336,52 @@ function showSidebar(component) {
       },
       (response) => {
         remixBtn.disabled = false;
-        if (!response || !response.ok) {
-          console.error("AI remix failed:", response?.error);
-          statusEl.textContent =
-            "AI remix failed. You can manually edit the HTML/CSS when generating code.";
+
+        // Handle Chrome extension messaging errors
+        if (chrome.runtime.lastError) {
+          console.error("CRE: Message error:", chrome.runtime.lastError);
+          statusEl.textContent = "Failed to communicate with extension. Please reload the page.";
+          statusEl.style.color = "#ef4444";
           return;
         }
-        statusEl.textContent = "Got remixed variants.";
-        renderVariants(response.variants || []);
+
+        if (!response || !response.ok) {
+          console.error("CRE: AI remix failed:", response?.error);
+          statusEl.textContent =
+            response?.error ||
+            "AI remix failed. You can manually edit the HTML/CSS when generating code.";
+          statusEl.style.color = "#ef4444";
+          return;
+        }
+
+        // Success - display variants
+        const variants = response.variants || [];
+        if (variants.length === 0) {
+          statusEl.textContent = "No variants returned. Try a different prompt.";
+          statusEl.style.color = "#f59e0b"; // Orange for warning
+          return;
+        }
+
+        statusEl.textContent = `Generated ${variants.length} variant${variants.length > 1 ? "s" : ""}.`;
+        statusEl.style.color = "#10b981"; // Green for success
+        renderVariants(variants);
 
         // Notify popup about latest extracted/remixed component for library usage
-        chrome.runtime.sendMessage({
-          type: "CRE_LATEST_COMPONENT",
-          payload: {
-            original: component,
-            variants: response.variants || [],
+        chrome.runtime.sendMessage(
+          {
+            type: "CRE_LATEST_COMPONENT",
+            payload: {
+              original: component,
+              variants: variants,
+            },
           },
-        });
+          () => {
+            // Ignore errors from popup notification (popup may be closed)
+            if (chrome.runtime.lastError) {
+              console.warn("CRE: Could not notify popup:", chrome.runtime.lastError);
+            }
+          }
+        );
       }
     );
   });
