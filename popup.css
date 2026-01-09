@@ -204,11 +204,91 @@ body {
   bottom: 10px;
   background: #111827;
   color: #e5e7eb;
-  padding: 6px 10px;
-  border-radius: 999px;
+  padding: 8px 14px;
+  border-radius: 6px;
   font-size: 11px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 9999;
+  max-width: 90%;
+  word-wrap: break-word;
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+  pointer-events: none;
+}
+
+/* Button disabled states */
+.cre-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cre-btn:disabled:hover {
+  background: inherit;
+  border-color: inherit;
+}
+
+/* Scrollbar styling for library */
+.cre-library::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cre-library::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+.cre-library::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.cre-library::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Card hover effects */
+.cre-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.cre-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Input focus improvements */
+.cre-input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Loading state indicator */
+.cre-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Button active states */
+.cre-btn-primary:active {
+  background: #1e40af;
+  transform: scale(0.98);
+}
+
+.cre-btn-secondary:active {
+  background: #e5e7eb;
+  transform: scale(0.98);
+}
+
+/* Selection styling */
+::selection {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Smooth transitions for interactive elements */
+.cre-btn,
+.cre-input,
+.cre-card {
+  transition: all 0.2s ease;
 }
 
 
