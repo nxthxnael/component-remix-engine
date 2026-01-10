@@ -33,16 +33,15 @@ async function getApiKey() {
  * @param {string} params.html - Original HTML of the component
  * @param {string} params.css - Original CSS of the component
  * @param {string} params.prompt - User's natural language remix prompt
+ * @param {string} apiKey - OpenAI API key to use for the request
  * @returns {Promise<Array<{html: string, css: string, description: string}>>} Array of remixed variants
  * @throws {Error} If API request fails or response is invalid
  */
-export async function callOpenAIForRemix({ html, css, prompt }) {
+export async function callOpenAIForRemix({ html, css, prompt }, apiKey) {
   if (!html && !css) {
     throw new Error("Cannot remix: both HTML and CSS are empty");
   }
 
-  const apiKey = await getApiKey();
-  
   // Enhanced system prompt for better AI responses
   const systemPrompt = `You are a front-end development assistant that remixes UI components based on user prompts.
 
@@ -114,7 +113,7 @@ Rules:
     if (!resp.ok) {
       const text = await resp.text();
       let errorMsg = `OpenAI API error (${resp.status})`;
-      
+
       // Try to extract meaningful error message
       try {
         const errorData = JSON.parse(text);
@@ -123,15 +122,17 @@ Rules:
         // If parsing fails, use the raw text (truncated)
         errorMsg = text.length > 100 ? text.substring(0, 100) + "..." : text;
       }
-      
+
       throw new Error(errorMsg);
     }
 
     const data = await resp.json();
     const content = data?.choices?.[0]?.message?.content;
-    
+
     if (!content) {
-      throw new Error("OpenAI response missing content. The API may have returned an empty response.");
+      throw new Error(
+        "OpenAI response missing content. The API may have returned an empty response."
+      );
     }
 
     // Parse JSON response, handling code fences if present
@@ -149,7 +150,9 @@ Rules:
         if (jsonObjectMatch) {
           parsed = JSON.parse(jsonObjectMatch[0]);
         } else {
-          throw new Error(`Failed to parse AI response as JSON: ${err.message}`);
+          throw new Error(
+            `Failed to parse AI response as JSON: ${err.message}`
+          );
         }
       }
     }
@@ -184,12 +187,14 @@ Rules:
     return normalized;
   } catch (error) {
     console.error("CRE: AI remix error:", error);
-    
+
     // Re-throw with more context if it's a network error
     if (error instanceof TypeError && error.message.includes("fetch")) {
-      throw new Error("Network error: Could not reach OpenAI API. Check your internet connection.");
+      throw new Error(
+        "Network error: Could not reach OpenAI API. Check your internet connection."
+      );
     }
-    
+
     throw error;
   }
 }

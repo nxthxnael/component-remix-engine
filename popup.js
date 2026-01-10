@@ -33,24 +33,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /**
- * Wire up settings section - API key and framework selection.
- * Loads saved settings on init and handles saving new settings.
+ * Wire up framework selection settings.
+ * Loads saved framework preference on init and handles saving changes.
  */
 async function wireSettings() {
-  const apiKeyInput = document.getElementById("cre-api-key");
   const saveBtn = document.getElementById("cre-save-settings");
   const frameworkSelect = document.getElementById("cre-framework-select");
 
-  // Load stored settings
+  // Load stored framework setting
   chrome.storage.sync.get(["creSettings"], (result) => {
     const settings = result?.creSettings || {};
-    if (settings.openaiApiKey) {
-      apiKeyInput.value = settings.openaiApiKey;
-    } else {
-      apiKeyInput.value = "sk-dummykey1234567890";
-      apiKeyInput.placeholder =
-        "Enter your OpenAI API key or use dummy key for testing";
-    }
     if (settings.defaultFramework) {
       frameworkSelect.value = settings.defaultFramework;
       defaultFramework = settings.defaultFramework;
@@ -58,19 +50,11 @@ async function wireSettings() {
   });
 
   saveBtn.addEventListener("click", () => {
-    const key = apiKeyInput.value.trim();
     const framework = frameworkSelect.value;
-
-    if (!key) {
-      showToast("API key cannot be empty. Using dummy key.");
-      apiKeyInput.value = "sk-dummykey1234567890";
-      return;
-    }
 
     chrome.storage.sync.set(
       {
         creSettings: {
-          openaiApiKey: key,
           defaultFramework: framework,
         },
       },
@@ -84,20 +68,13 @@ async function wireSettings() {
           return;
         }
         defaultFramework = framework;
-        showToast("Settings saved successfully.");
+        showToast("Framework preference saved.");
       }
     );
   });
 
   frameworkSelect.addEventListener("change", () => {
     defaultFramework = frameworkSelect.value;
-  });
-
-  // Save settings on Enter key in API key input
-  apiKeyInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      saveBtn.click();
-    }
   });
 }
 
