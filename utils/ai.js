@@ -1,4 +1,3 @@
-// utils/ai.js
 // Thin wrapper around the OpenAI Chat Completions API for remixing components.
 // Handles API key retrieval from chrome.storage.sync and makes requests to OpenAI.
 
